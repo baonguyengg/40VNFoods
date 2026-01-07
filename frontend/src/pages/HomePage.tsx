@@ -40,13 +40,13 @@ function HomePage({ language }: HomePageProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="text-5xl md:text-7xl tracking-[0.6em] uppercase mb-4 font-bold"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl tracking-[0.2em] sm:tracking-[0.3em] md:tracking-[0.6em] uppercase mb-4 font-bold leading-tight"
             >
               {t.home_banner_title}
             </motion.h1>
             
             <motion.p
-              className="mt-6 text-2xl md:text-4xl font-bold tracking-[0.3em] uppercase">
+              className="mt-4 md:mt-6 text-lg sm:text-xl md:text-2xl lg:text-4xl font-bold tracking-[0.15em] sm:tracking-[0.2em] md:tracking-[0.3em] uppercase">
               {t.home_banner_subtitle}
             </motion.p>
           </motion.div>
@@ -55,10 +55,10 @@ function HomePage({ language }: HomePageProps) {
           style={{ opacity }}
           animate={{ y: [0, 8, 0] }}
           transition={{ repeat: Infinity, duration: 2.5 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center"
+          className="absolute bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center"
         >
           <button
-            className="btn-transparent"
+            className="btn-transparent text-sm md:text-base px-6 md:px-8 py-2 md:py-3"
             onClick={() => navigate('/library')}
           >
             {t.home_discover_btn}
