@@ -5,17 +5,13 @@ Handles image upload and model prediction
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import numpy as np
-from tensorflow.keras.models import load_model
-from tensorflow.keras.applications.inception_v3 import preprocess_input
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import os
 import sys
 from PIL import Image
-import jwt
-from datetime import datetime, timedelta
-import json
-from functools import wraps
-from dotenv import load_dotenv
+import base64
+import io
 import logging
 
 # Configure logging
@@ -25,88 +21,66 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-load_dotenv()
-
 # Add parent directory to path to import config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import FOOD_DATABASE, MODEL_PATH, IMAGE_SIZE
+from config import MODEL_PATH
+from model_utils import load_ml_model, predict_image, get_food_info, get_food_classes
+from token_utils import (
+    create_access_token, create_refresh_token, verify_token, 
+    token_required, get_current_user, is_authenticated,
+    ACCESS_TOKEN_EXPIRE_MINUTES
+)
 from history_utils import save_prediction_history, get_prediction_history, delete_history_item, delete_all_history
-from user_utils import create_user, check_user_password, find_user_by_username
-import base64
-import io
+from user_utils import create_user, check_user_password
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for React frontend
 
-# JWT Configuration
-SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'default_secret_key_change_in_production')
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', 15))
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', 7))
+# Custom rate limit key function - phân biệt user login vs chưa login
+def get_rate_limit_key():
+    """
+    Rate limit key:
+    - User đã login (có valid token) → limit theo username
+    - User chưa login → limit theo IP
+    """
+    username = get_current_user()
+    if username:
+        return f"user:{username}"
+    return f"ip:{get_remote_address()}"
+
+# Rate Limiting
+limiter = Limiter(
+    app=app,
+    key_func=get_rate_limit_key,
+    default_limits=["200 per hour"],
+    storage_uri="memory://"
+)
 
 # Load model at startup
-model = None
-_food_classes_cache = None
+load_ml_model()
 
-# JWT Helper Functions
-def create_access_token(username):
-    """Create JWT access token"""
-    payload = {
-        'username': username,
-        'type': 'access',
-        'exp': datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    }
-    return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
-
-def create_refresh_token(username):
-    """Create JWT refresh token"""
-    payload = {
-        'username': username,
-        'type': 'refresh',
-        'exp': datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    }
-    return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
-
-def verify_token(token, token_type='access'):
-    """Verify JWT token"""
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-        if payload.get('type') != token_type:
-            return None
-        return payload
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.InvalidTokenError:
-        return None
-
-# Middleware decorator for protected routes
-def token_required(f):
-    """Decorator to protect routes with JWT authentication"""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.headers.get('Authorization', None)
-        if not auth or not auth.startswith('Bearer '):
-            return jsonify({'success': False, 'message': 'Missing or invalid authorization header'}), 401
-        
-        token = auth.split(' ')[1]
-        payload = verify_token(token, 'access')
-        
-        if not payload:
-            return jsonify({'success': False, 'message': 'Invalid or expired token'}), 401
-        
-        request.current_user = payload['username']
-        return f(*args, **kwargs)
-    return decorated
+# Health check endpoint (cho Render/monitoring)
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for deployment platforms"""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'Vietnamese Food Recognition API',
+        'version': '1.0.0'
+    })
 
 # Đăng ký người dùng
 @app.route('/api/register', methods=['POST'])
+@limiter.limit("5 per minute")
 def register():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
+    
     if not username or not password:
         return jsonify({'success': False, 'message': 'Username and password required'}), 400
+    
     ok, msg = create_user(username, password)
     if ok:
         return jsonify({'success': True, 'message': 'User created successfully'})
@@ -115,12 +89,15 @@ def register():
 
 # Đăng nhập người dùng
 @app.route('/api/login', methods=['POST'])
+@limiter.limit("10 per minute")
 def login():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
+    
     if not username or not password:
         return jsonify({'success': False, 'message': 'Username and password required'}), 400
+    
     if not check_user_password(username, password):
         return jsonify({'success': False, 'message': 'Invalid username or password'}), 401
     
@@ -139,6 +116,7 @@ def login():
 
 # API refresh token
 @app.route('/api/refresh', methods=['POST'])
+@limiter.limit("20 per minute")
 def refresh():
     """Refresh access token using refresh token"""
     data = request.get_json()
@@ -164,6 +142,7 @@ def refresh():
 
 # API lấy lịch sử dự đoán gần nhất
 @app.route('/api/history', methods=['GET'])
+@limiter.limit("30 per minute")
 @token_required
 def get_history():
     try:
@@ -180,6 +159,7 @@ def get_history():
 
 # API xóa toàn bộ lịch sử dự đoán
 @app.route('/api/history', methods=['DELETE'])
+@limiter.limit("5 per minute")
 @token_required
 def delete_history():
     try:
@@ -195,6 +175,7 @@ def delete_history():
 
 # API xóa một record lịch sử
 @app.route('/api/history/<item_id>', methods=['DELETE'])
+@limiter.limit("20 per minute")
 @token_required
 def delete_history_item_route(item_id):
     try:
@@ -210,67 +191,19 @@ def delete_history_item_route(item_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-def load_ml_model():
-    """Load TensorFlow model"""
-    global model
-    try:
-        # Adjust path to go from backend/ to root directory
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        model_path = os.path.join(base_dir, MODEL_PATH)
-        
-        if os.path.exists(model_path):
-            model = load_model(model_path, compile=False)
-            logger.info(f"Model loaded successfully from {model_path}")
-        else:
-            logger.error(f"Model not found at {model_path}")
-    except Exception as e:
-        logger.error(f"Error loading model: {str(e)}")
-
-# Load model on startup
-load_ml_model()
-
-
-def get_food_classes():
-    """Get list of food classes in ORIGINAL order from JSON (cached)"""
-    global _food_classes_cache
-    if _food_classes_cache is None:
-        _food_classes_cache = list(FOOD_DATABASE.keys())
-    return _food_classes_cache
-
-
-def preprocess_image_data(img):
-    """Preprocess PIL Image for InceptionV3 prediction"""
-    img = img.resize(IMAGE_SIZE)
-    img_array = np.array(img, dtype=np.float32)
-    img_array = np.expand_dims(img_array, axis=0)
-    img_array = preprocess_input(img_array)  
-    return img_array
-
-
-def get_food_info(food_name, lang='VN'):
-    """Get food information in specified language"""
-    if food_name not in FOOD_DATABASE:
-        return None
-    
-    food = FOOD_DATABASE[food_name]
-    lang_suffix = '' if lang == 'VN' else '_en'
-    
-    return {
-        'name': food_name if lang == 'VN' else food.get('name_en', food_name),
-        'region': food['region'],
-        'description': food.get(f'description{lang_suffix}', food['description_vn']),
-        'ingredients': food.get(f'ingredients{lang_suffix}', food['ingredients_vn']),
-        'related': food.get('related', [])
-    }
-
 
 @app.route('/api/predict', methods=['POST'])
+@limiter.limit(
+    "5 per 10 minute",  # User chưa login: 5 requests / 10 phút
+    exempt_when=is_authenticated
+)
+@limiter.limit(
+    "30 per 10 minute",  # User đã login: 30 requests / 10 phút
+    key_func=lambda: get_rate_limit_key() if is_authenticated() else None
+)
 def predict():
     """Predict food from uploaded image"""
     try:
-        if model is None:
-            return jsonify({'success': False, 'error': 'Model not loaded'}), 500
-        
         if 'image' not in request.files:
             return jsonify({'success': False, 'error': 'No image provided'}), 400
         
@@ -278,45 +211,26 @@ def predict():
         lang = request.form.get('lang', 'VN')
         
         img = Image.open(file.stream).convert('RGB')
-        img_array = preprocess_image_data(img)
         
+        # Convert to base64 for history
         buffered = io.BytesIO()
         img.save(buffered, format="JPEG", quality=85)
         img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
         
-        pred_probs = model.predict(img_array, verbose=0)[0]
-        
-        classes = get_food_classes()
-        top_k = 4
-        top_indices = np.argpartition(pred_probs, -top_k)[-top_k:]
-        top_indices = top_indices[np.argsort(pred_probs[top_indices])][::-1]
-        
-        food_name = classes[top_indices[0]]
-        confidence = float(pred_probs[top_indices[0]] * 100)
-        related = [classes[i] for i in top_indices[1:top_k]]
-        
+        # Predict using model_utils
+        food_name, confidence, related = predict_image(img, top_k=4)
         food_info = get_food_info(food_name, lang)
         
         if not food_info:
             return jsonify({'success': False, 'error': 'Food information not found'}), 404
 
         # Lưu lịch sử nếu user đã đăng nhập
-        try:
-            auth = request.headers.get('Authorization', None)
-            if auth and auth.startswith('Bearer '):
-                token = auth.split(' ')[1]
-                payload = verify_token(token, 'access')
-                if payload:
-                    username = payload['username']
-                    save_prediction_history(
-                        username,
-                        food_name, 
-                        confidence, 
-                        image_base64=img_base64
-                    )
-        except Exception as e:
-            # Không làm gián đoạn prediction nếu lưu lịch sử thất bại
-            pass
+        username = get_current_user()
+        if username:
+            try:
+                save_prediction_history(username, food_name, confidence, image_base64=img_base64)
+            except Exception as e:
+                logger.warning(f"Failed to save history: {e}")
 
         return jsonify({
             'success': True,
@@ -332,6 +246,7 @@ def predict():
 
 
 @app.route('/api/foods/search', methods=['GET'])
+@limiter.limit("60 per minute")
 def search_foods():
     """Search foods with pagination and region filter"""
     try:
@@ -383,6 +298,7 @@ def search_foods():
 
 
 @app.route('/api/food/<food_name>', methods=['GET'])
+@limiter.limit("60 per minute")
 def get_food_detail(food_name):
     """Get detailed info for specific food"""
     try:
@@ -402,14 +318,22 @@ def get_food_detail(food_name):
 
 
 if __name__ == '__main__':
+    # Get configuration from environment
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_DEBUG', '0') == '1'
+    
     logger.info("="*50)
     logger.info("Starting Flask API Server")
-    logger.info(f"API available at http://localhost:5000")
+    logger.info(f"Environment: {os.environ.get('FLASK_ENV', 'development')}")
+    logger.info(f"Port: {port}")
+    logger.info(f"Debug mode: {debug}")
     logger.info(f"Model path: {MODEL_PATH}")
     logger.info("="*50)
     logger.info("Available endpoints:")
+    logger.info("  Health: GET /api/health")
     logger.info("  Auth: POST /api/register, /api/login, /api/refresh")
     logger.info("  Food: POST /api/predict, GET /api/food/<name>, /api/foods/search")
     logger.info("  History: GET /api/history, DELETE /api/history[/<id>]")
     logger.info("="*50)
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    
+    app.run(debug=debug, host='0.0.0.0', port=port)

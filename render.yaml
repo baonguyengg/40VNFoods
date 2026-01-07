@@ -1,0 +1,20 @@
+services:
+  # Backend API Service
+  - type: web
+    name: vnfoods-api
+    env: python
+    region: singapore # Chọn region gần Việt Nam
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: python backend/api.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: FLASK_ENV
+        value: production
+      - key: JWT_SECRET_KEY
+        generateValue: true # Auto-generate JWT secret
+      - key: FLASK_DEBUG
+        value: 0
+    healthCheckPath: /api/health
+    autoDeploy: true

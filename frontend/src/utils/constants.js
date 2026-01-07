@@ -87,6 +87,10 @@ export const MESSAGES = {
     // Network errors
     networkError: 'Lỗi kết nối mạng! Vui lòng kiểm tra internet.',
     serverError: 'Không thể kết nối đến server!',
+    // Rate limiting
+    rateLimitError: 'Bạn đã gửi quá nhiều yêu cầu! Vui lòng đợi một chút.',
+    rateLimitGuest: '🔒 Người dùng chưa đăng nhập chỉ được gửi 5 yêu cầu / 10 phút.\n\nĐăng nhập để sử dụng nhiều hơn (30 yêu cầu / 10 phút)!',
+    rateLimitUser: '⏱️ Bạn đã gửi quá nhiều yêu cầu!\n\nGiới hạn: 30 yêu cầu / 10 phút. Vui lòng đợi một chút.',
   },
   EN: {
     loginSuccess: 'Login successful!',
@@ -112,5 +116,10 @@ export const MESSAGES = {
     // Network errors
     networkError: 'Network Error! Please check your internet connection.',
     serverError: 'Cannot connect to server!',
+    // Rate limiting
+    rateLimitError: 'Too many requests! Please wait a moment.',
+    rateLimitTitle: '⏱️ Please wait!',
+    rateLimitGuest: '🔒 Guest users are limited to 5 requests / 10 minutes.\n\nLogin to use more (30 requests / 10 minutes)!',
+    rateLimitUser: '⏱️ You have sent too many requests!\n\nLimit: 30 requests / 10 minutes. Please wait.',
   }
 };

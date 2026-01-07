@@ -1,19 +1,21 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { LANGUAGES, API_BASE_URL } from '../config'
-import { BACKGROUND_IMAGES, TIMEOUTS } from '../utils/constants'
-import { PageBackground, LoadingOverlay } from '../components/shared'
-import { createAuthAxios } from '../utils/auth'
+import { BACKGROUND_IMAGES, TIMEOUTS, MESSAGES } from '../utils/constants'
+import { PageBackground } from '../components/shared'
+import { createAuthAxios, isAuthenticated } from '../utils/auth'
+import { useLoading } from '../components/shared/loadingcontext'
 
 const HERO_IMAGE_URL = BACKGROUND_IMAGES.hero
 const ANALYZING_IMAGE = BACKGROUND_IMAGES.analyzing
 
-function SearchPage({ language, setPredictionResult }) {
-  const [loading, setLoading] = useState(false)
+const SearchPage = memo(({ language, setPredictionResult }) => {
   const [dragActive, setDragActive] = useState(false)
   const navigate = useNavigate()
   const t = LANGUAGES[language]
+  const messages = MESSAGES[language]
+  const { showLoading, hideLoading } = useLoading()
 
   const handleFileUpload = useCallback(async (file) => {
     if (!file) return
@@ -23,10 +25,12 @@ function SearchPage({ language, setPredictionResult }) {
       return
     }
     
-    setLoading(true)
+    showLoading(t.analyzing, ANALYZING_IMAGE)
     const formData = new FormData()
     formData.append('image', file)
     formData.append('lang', language)
+
+    const imageUrl = URL.createObjectURL(file)
 
     try {
       const authAxios = createAuthAxios()
@@ -38,25 +42,34 @@ function SearchPage({ language, setPredictionResult }) {
       if (response.data.success) {
         setPredictionResult({
           ...response.data,
-          imageUrl: URL.createObjectURL(file)
+          imageUrl
         })
         navigate('/result')
       } else {
+        URL.revokeObjectURL(imageUrl)
         alert(response.data.error || 'Có lỗi xảy ra khi phân tích ảnh!')
       }
     } catch (error) {
+      URL.revokeObjectURL(imageUrl)
       console.error('Error:', error)
-      if (error.code === 'ECONNABORTED') {
+      if (error.response?.status === 429) {
+        // Rate limit error
+        const isLoggedIn = isAuthenticated()
+        const message = isLoggedIn 
+          ? messages.rateLimitUser 
+          : messages.rateLimitGuest
+        alert(message)
+      } else if (error.code === 'ECONNABORTED') {
         alert('Yêu cầu hết thời gian! Vui lòng thử lại.')
       } else if (error.response) {
         alert(error.response.data.error || 'Có lỗi xảy ra khi phân tích ảnh!')
       } else {
-        alert('Không thể kết nối đến server!')
+        alert(messages.serverError)
       }
     } finally {
-      setLoading(false)
+      hideLoading()
     }
-  }, [language, setPredictionResult, navigate])
+  }, [language, setPredictionResult, navigate, messages, showLoading, hideLoading, t.analyzing])
 
   const handleDrop = useCallback((e) => {
     e.preventDefault()
@@ -88,19 +101,15 @@ function SearchPage({ language, setPredictionResult }) {
         onDrop={handleDrop}
         onFileSelect={handleFileUpload}
       />
-
-      <LoadingOverlay 
-        isVisible={loading}
-        message={t.analyzing}
-        image={ANALYZING_IMAGE}
-      />
     </div>
   )
-}
+})
 
-const HeroCard = ({ t, dragActive, onDragOver, onDragLeave, onDrop, onFileSelect }) => (
+SearchPage.displayName = 'SearchPage'
+
+const HeroCard = memo(({ t, dragActive, onDragOver, onDragLeave, onDrop, onFileSelect }) => (
   <motion.div 
-    className="relative z-10 glass-card rounded-[2rem] overflow-hidden flex flex-col md:flex-row items-center p-6 md:p-12 gap-4 max-w-7xl w-full mx-4"
+    className="relative z-10 glass-card rounded-4xl overflow-hidden flex flex-col md:flex-row items-center p-6 md:p-12 gap-4 max-w-7xl w-full mx-4"
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
     transition={{ type: "spring", stiffness: 100 }}
@@ -115,9 +124,11 @@ const HeroCard = ({ t, dragActive, onDragOver, onDragLeave, onDrop, onFileSelect
     />
     <HeroImage />
   </motion.div>
-)
+))
 
-const HeroContent = ({ t, dragActive, onDragOver, onDragLeave, onDrop, onFileSelect }) => (
+HeroCard.displayName = 'HeroCard'
+
+const HeroContent = memo(({ t, dragActive, onDragOver, onDragLeave, onDrop, onFileSelect }) => (
   <div className="flex-1 flex flex-col items-start text-left space-y-6">
     <motion.h1 
       className="lg:text-5xl font-black gradient-text-animated whitespace-nowrap mb-2 leading-tight pt-3"
@@ -139,9 +150,11 @@ const HeroContent = ({ t, dragActive, onDragOver, onDragLeave, onDrop, onFileSel
       onFileSelect={onFileSelect}
     />
   </div>
-)
+))
 
-const UploadZone = ({ t, dragActive, onDragOver, onDragLeave, onDrop, onFileSelect }) => {
+HeroContent.displayName = 'HeroContent'
+
+const UploadZone = memo(({ t, dragActive, onDragOver, onDragLeave, onDrop, onFileSelect }) => {
   const handleClick = () => document.getElementById('unified-input').click()
   const handleChange = (e) => onFileSelect(e.target.files[0])
 
@@ -175,14 +188,16 @@ const UploadZone = ({ t, dragActive, onDragOver, onDragLeave, onDrop, onFileSele
       />
     </motion.div>
   )
-}
+})
 
-const HeroImage = () => (
+UploadZone.displayName = 'UploadZone'
+
+const HeroImage = memo(() => (
   <div className="flex-1 relative w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl border-4 border-white/30">
     <motion.img 
       src={HERO_IMAGE_URL} 
       alt="Vietnamese Food" 
-      className="w-full h-64 md:h-[320px] object-cover transition-transform duration-700 hover:scale-105"
+      className="w-full h-64 md:h-80 object-cover transition-transform duration-700 hover:scale-105"
     />
     <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent" />
     
@@ -197,6 +212,8 @@ const HeroImage = () => (
       transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
     />
   </div>
-)
+))
+
+HeroImage.displayName = 'HeroImage'
 
 export default SearchPage

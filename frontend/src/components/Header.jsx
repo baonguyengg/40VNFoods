@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LANGUAGES } from '../config'
 import { logout } from '../utils/auth'
@@ -24,15 +24,15 @@ function Header({ language, setLanguage }) {
     checkAuth()
   }, [pathname, checkAuth])
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout()
-  }
+  }, [])
 
   const textColor = isScrolled
     ? 'text-gray-700 hover:text-red-600'
     : 'text-white/90 hover:text-white'
 
-  const NavBtn = ({ label, path, active }) => (
+  const NavBtn = memo(({ label, path, active }) => (
     <button
       onClick={() => navigate(path)}
       className={`relative font-bold text-sm uppercase tracking-widest pb-1 transition-all ${textColor}`}
@@ -43,7 +43,10 @@ function Header({ language, setLanguage }) {
           layoutId="underline"
           className="absolute bottom-0 inset-x-0 h-0.5 bg-red-600"/>)}
     </button>
-  )
+  ))
+  
+  NavBtn.displayName = 'NavBtn'
+  
   return (
     <motion.header
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-500
@@ -94,12 +97,14 @@ function Header({ language, setLanguage }) {
                     <button
                       onClick={() => navigate('/history')}
                       className="w-full px-5 py-3 text-left text-[11px] font-bold uppercase text-gray-600 hover:bg-gray-50 hover:text-red-600 transition-all duration-300"
+                      aria-label="View history"
                     >
                       📊 {t.nav_history}
                     </button>
                     <button
                       onClick={handleLogout}
                       className="w-full px-5 py-3 text-left text-[11px] font-bold uppercase text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all duration-300"
+                      aria-label="Logout"
                     >
                       🚪 Đăng xuất
                     </button>

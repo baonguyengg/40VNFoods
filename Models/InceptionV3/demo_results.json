@@ -1,0 +1,12 @@
+[
+  {
+    "image": "download.jpg",
+    "prediction": "Bún bò Huế",
+    "confidence": 0.8578751683235168
+  },
+  {
+    "image": "pho.jpg",
+    "prediction": "Bún bò Huế",
+    "confidence": 0.7375114560127258
+  }
+]

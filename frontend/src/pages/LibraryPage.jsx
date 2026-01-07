@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { motion } from 'framer-motion'
 import { LANGUAGES, API_BASE_URL } from '../config'
 import { BACKGROUND_IMAGES, PAGINATION as PAGINATION_CONFIG, TIMEOUTS } from '../utils/constants'
 import { PageBackground, LoadingSpinner, FoodCard, Pagination } from '../components/shared'
 
-function LibraryPage({ language }) {
+const LibraryPage = memo(({ language }) => {
   const [foods, setFoods] = useState([])
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -168,6 +168,7 @@ function LibraryPage({ language }) {
       </div>
     </div>
   )
-}
+})
 
+LibraryPage.displayName = 'LibraryPage'
 export default LibraryPage

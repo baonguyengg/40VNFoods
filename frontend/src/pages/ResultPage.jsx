@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, memo } from 'react'
 import { LANGUAGES } from '../config'
 import { BACKGROUND_IMAGES, TIMEOUTS, MESSAGES, ANIMATION_DELAYS } from '../utils/constants'
 import { 
@@ -12,7 +12,7 @@ import {
   RelatedDishes 
 } from '../components/shared'
 
-function ResultPage({ language, predictionResult: propPredictionResult }) {
+const ResultPage = memo(({ language, predictionResult: propPredictionResult }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const t = LANGUAGES[language]
@@ -23,6 +23,16 @@ function ResultPage({ language, predictionResult: propPredictionResult }) {
     [propPredictionResult, location.state]
   )
   const fromHistory = location.state?.fromHistory || false
+
+  // Cleanup blob URL when component unmounts
+  useEffect(() => {
+    const imageUrl = predictionResult?.imageUrl
+    return () => {
+      if (imageUrl && imageUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(imageUrl)
+      }
+    }
+  }, [predictionResult?.imageUrl])
 
   useEffect(() => {
     if (!predictionResult) {
@@ -113,9 +123,11 @@ function ResultPage({ language, predictionResult: propPredictionResult }) {
       </motion.div>
     </div>
   )
-}
+})
 
-const ResultCard = ({ food_info, confidence, imageUrl, regionText, t }) => (
+ResultPage.displayName = 'ResultPage'
+
+const ResultCard = memo(({ food_info, confidence, imageUrl, regionText, t }) => (
   <motion.div 
     className="result-card mb-10"
     initial={{ opacity: 0, scale: 0.95 }}
@@ -123,7 +135,7 @@ const ResultCard = ({ food_info, confidence, imageUrl, regionText, t }) => (
     transition={{ delay: ANIMATION_DELAYS.mainCard, type: "spring" }}
   >
     <div className="grid md:grid-cols-2 gap-12">
-      <FoodImage imageUrl={imageUrl} />
+      <FoodImage imageUrl={imageUrl} foodName={food_info.name} />
       <FoodInfo 
         food_info={food_info}
         confidence={confidence}
@@ -132,9 +144,11 @@ const ResultCard = ({ food_info, confidence, imageUrl, regionText, t }) => (
       />
     </div>
   </motion.div>
-)
+))
 
-const FoodImage = ({ imageUrl }) => (
+ResultCard.displayName = 'ResultCard'
+
+const FoodImage = memo(({ imageUrl, foodName }) => (
   <motion.div
     className="relative"
     initial={{ opacity: 0, x: -50 }}
@@ -145,14 +159,16 @@ const FoodImage = ({ imageUrl }) => (
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 z-10 pointer-events-none" />
       <img 
         src={imageUrl} 
-        alt="Food" 
+        alt={foodName || 'Vietnamese Food Dish'}
         className="w-full h-full object-cover aspect-square md:aspect-auto" 
       />
     </div>
   </motion.div>
-)
+))
 
-const FoodInfo = ({ food_info, confidence, regionText, t }) => (
+FoodImage.displayName = 'FoodImage'
+
+const FoodInfo = memo(({ food_info, confidence, regionText, t }) => (
   <motion.div
     className="space-y-6"
     initial={{ opacity: 0, x: 50 }}
@@ -188,6 +204,8 @@ const FoodInfo = ({ food_info, confidence, regionText, t }) => (
       </div>
     </div>
   </motion.div>
-)
+))
+
+FoodInfo.displayName = 'FoodInfo'
 
 export default ResultPage

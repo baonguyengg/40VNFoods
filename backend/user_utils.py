@@ -1,21 +1,14 @@
 import os
-import json
 from flask_bcrypt import Bcrypt
+from file_utils import load_json_file, save_json_file
 
-USERS_PATH = os.path.join(os.path.dirname(__file__), 'users.json')
+USERS_PATH = os.path.join(os.path.dirname(__file__), 'data', 'users.json')
 
 def load_users():
-    if os.path.exists(USERS_PATH):
-        with open(USERS_PATH, 'r', encoding='utf-8') as f:
-            try:
-                return json.load(f)
-            except Exception:
-                return []
-    return []
+    return load_json_file(USERS_PATH, default=[])
 
 def save_users(users):
-    with open(USERS_PATH, 'w', encoding='utf-8') as f:
-        json.dump(users, f, ensure_ascii=False, indent=2)
+    return save_json_file(USERS_PATH, users)
 
 def find_user_by_username(username):
     users = load_users()

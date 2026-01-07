@@ -49,7 +49,9 @@ export const useAuthForm = (language) => {
       console.error('Login error:', err);
       let errorMsg = messages.error;
       
-      if (err.code === 'ERR_NETWORK' || !err.response) {
+      if (err.response?.status === 429) {
+        errorMsg = messages.rateLimitError || 'Too many requests! Please wait.';
+      } else if (err.code === 'ERR_NETWORK' || !err.response) {
         errorMsg = messages.networkError;
       } else if (err.response?.data?.message) {
         errorMsg = err.response.data.message === 'Invalid username or password' 
@@ -84,7 +86,9 @@ export const useAuthForm = (language) => {
       console.error('Register error:', err);
       let errorMsg = messages.error;
       
-      if (err.code === 'ERR_NETWORK' || !err.response) {
+      if (err.response?.status === 429) {
+        errorMsg = messages.rateLimitError || 'Too many requests! Please wait.';
+      } else if (err.code === 'ERR_NETWORK' || !err.response) {
         errorMsg = messages.networkError;
       } else if (err.response?.data?.message) {
         errorMsg = err.response.data.message === 'Username already exists' 

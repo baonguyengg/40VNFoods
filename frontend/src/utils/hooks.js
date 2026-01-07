@@ -36,8 +36,11 @@ export const useRequireAuth = () => {
     setLoggedIn(authenticated);
     setLoading(false);
 
-    if (!authenticated) {
-    }
+    // Optional: Redirect to login if not authenticated
+    // Uncomment if you want auto-redirect
+    // if (!authenticated) {
+    //   navigate('/login');
+    // }
   }, [navigate]);
 
   return { loggedIn, loading };

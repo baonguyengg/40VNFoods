@@ -1,5 +1,6 @@
 flask==3.0.0
 flask-cors==4.0.0
+flask-limiter>=3.5.0
 tensorflow>=2.16.0
 numpy>=1.26.0
 pillow>=10.0.0
@@ -7,3 +8,8 @@ pillow>=10.0.0
 flask-bcrypt
 pyjwt
 python-dotenv
+
+# Model evaluation dependencies
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+seaborn>=0.12.0

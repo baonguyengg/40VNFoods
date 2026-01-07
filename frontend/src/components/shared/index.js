@@ -1,6 +1,5 @@
 export { default as PageBackground } from './PageBackground'
-export { default as LoadingSpinner } from './LoadingSpinner'
-export { default as LoadingOverlay } from './LoadingOverlay'
+export { LoadingSpinner } from './loadingcontext'
 export { default as ErrorState } from './ErrorState'
 export { default as InfoBox } from './InfoBox'
 export { default as ConfidenceBar } from './ConfidenceBar'

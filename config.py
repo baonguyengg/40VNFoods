@@ -8,13 +8,13 @@ from functools import lru_cache
 
 # Model Configuration
 MODEL_PATH = "Models/InceptionV3/fine_tune_model_best.h5" 
-IMAGE_SIZE = (299, 299)  # Must match InceptionV3 training size!
+IMAGE_SIZE = (299, 299)
 NUM_CLASSES = 40 
 BATCH_SIZE = 32 
 
-FOOD_DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'backend', 'food_database.json')
+FOOD_DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'backend', 'data', 'food_database.json')
 
-# Load FOOD_DATABASE from JSON (cached for performance)
+# Load FOOD_DATABASE from JSON
 @lru_cache(maxsize=1)
 def _load_food_database():
     """Load food database with caching"""

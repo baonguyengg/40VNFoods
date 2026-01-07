@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useCallback, memo } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { isAuthenticated } from './utils/auth'
+import { LoadingProvider } from './components/shared/loadingcontext'
 import Header from './components/Header'
 import Footer from './components/Footer'
 
@@ -34,8 +35,8 @@ const pageVariants = {
 
 const transition = { duration: 0.3 }
 
-// Animated Page 
-function AnimatedPage({ children, variant = 'slideY' }) {
+// Animated Page - memoized
+const AnimatedPage = memo(({ children, variant = 'slideY' }) => {
   return (
     <motion.div
       initial={pageVariants[variant].initial}
@@ -46,12 +47,16 @@ function AnimatedPage({ children, variant = 'slideY' }) {
       {children}
     </motion.div>
   )
-}
+})
 
-// Protected 
-function ProtectedRoute({ children }) {
+AnimatedPage.displayName = 'AnimatedPage'
+
+// Protected - memoized
+const ProtectedRoute = memo(({ children }) => {
   return isAuthenticated() ? children : <Navigate to="/login" replace />;
-}
+})
+
+ProtectedRoute.displayName = 'ProtectedRoute'
 
 function AnimatedRoutes({ language, predictionResult, setPredictionResult }) {
   const location = useLocation()
@@ -117,23 +122,25 @@ function App() {
   const [language, setLanguage] = useState('VN')
   const [predictionResult, setPredictionResult] = useState(null)
 
-  const handleSetPrediction = (data) => {
+  const handleSetPrediction = useCallback((data) => {
     setPredictionResult(data);
-  };
+  }, []);
 
   return (
     <Router>
-      <div className="min-h-screen flex flex-col">
-        <Header language={language} setLanguage={setLanguage} />
-        <main className="flex-1 w-full">
-          <AnimatedRoutes 
-            language={language} 
-            predictionResult={predictionResult} 
-            setPredictionResult={handleSetPrediction}
-          />
-        </main>
-        <Footer language={language} />
-      </div>
+      <LoadingProvider>
+        <div className="min-h-screen flex flex-col">
+          <Header language={language} setLanguage={setLanguage} />
+          <main className="flex-1 w-full">
+            <AnimatedRoutes 
+              language={language} 
+              predictionResult={predictionResult} 
+              setPredictionResult={handleSetPrediction}
+            />
+          </main>
+          <Footer language={language} />
+        </div>
+      </LoadingProvider>
     </Router>
   )
 }
