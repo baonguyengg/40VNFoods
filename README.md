@@ -7,11 +7,17 @@
 ![React](https://img.shields.io/badge/React-18.2-61DAFB)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.16+-orange)
 
+## 🌐 Live Demo
+
+**Try it now:** [https://40vnfoods.vercel.app](https://40vnfoods.vercel.app)
+
 ## Overview
 
 Full-stack AI application to recognize and classify **40 traditional Vietnamese dishes** with bilingual information, helping preserve and promote Vietnamese culinary culture.
 
 **Tech Stack:** React + Vite + Tailwind CSS | Flask + TensorFlow + InceptionV3
+
+**Deployment:** Frontend on Vercel | Backend on Render
 
 ## Features
 
@@ -73,8 +79,8 @@ See [Model Evaluation Documentation](backend/MODEL_EVALUATION_README.md) for det
 
 ## Screenshots
 
-![Home](c:\Users\LOQ\OneDrive\Pictures\Screenshots\Screenshot 2026-01-07 131448.png) 
-![Search](c:\Users\LOQ\OneDrive\Pictures\Screenshots\Screenshot 2026-01-07 131502.png) 
+![Home](c:\Users\LOQ\OneDrive\Pictures\Screenshots\Screenshot 2026-01-07 131448.png)
+![Search](c:\Users\LOQ\OneDrive\Pictures\Screenshots\Screenshot 2026-01-07 131502.png)
 ![Results](c:\Users\LOQ\OneDrive\Pictures\Screenshots\Screenshot 2026-01-07 131740.png)
 
 ## Authors & Contact
