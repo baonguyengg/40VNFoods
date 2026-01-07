@@ -35,6 +35,6 @@ Thumbs.db
 
 # Uploads
 backend/uploads/
-*.h5
-*.h5
-*.h5
+
+# Models are tracked with Git LFS, see .gitattributes
+# *.h5
