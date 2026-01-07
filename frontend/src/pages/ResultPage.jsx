@@ -24,7 +24,6 @@ const ResultPage = memo(({ language, predictionResult: propPredictionResult }) =
   )
   const fromHistory = location.state?.fromHistory || false
 
-  // Cleanup blob URL when component unmounts
   useEffect(() => {
     const imageUrl = predictionResult?.imageUrl
     return () => {
@@ -69,7 +68,7 @@ const ResultPage = memo(({ language, predictionResult: propPredictionResult }) =
   const regionText = t[food_info.region] || food_info.region
 
   return (
-    <div className="relative pt-8 w-full min-h-screen overflow-y-auto">
+    <div className="relative pt-8 w-full min-h-screen overflow-y-auto pt-18">
       <PageBackground imageUrl={BACKGROUND_IMAGES.result} />
 
       <motion.div 

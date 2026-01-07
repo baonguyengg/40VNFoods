@@ -176,5 +176,3 @@ export const CONTACT_INFO = {
   linkedin: 'https://linkedin.com',
   phone: '+84 389 387 955'
 };
-
-export const LOGO_URL = 'https://www.google.com/logos/doodles/2020/celebrating-banh-mi-6753651837108330.3-2xa.gif';
