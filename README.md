@@ -16,6 +16,15 @@
 ## 📖 Overview
 
 Full-stack AI application to recognize and classify **40 traditional Vietnamese dishes** with bilingual support, helping preserve and promote Vietnamese culinary culture.
+## Dataset & Model
+The project utilizes a comprehensive dataset and a pre-trained model hosted on Kaggle:
+
+* **Kaggle Link:** [40 Vietnamese Foods Dataset](https://www.kaggle.com/datasets/baonguyen2703/my-project-images-and-models)
+* **Total Images:** 28,734 images (Train: 20,455 | Val: 2,875 | Test: 5,404)
+* **Classes:** 40 traditional Vietnamese dishes
+* **Includes:** Image data and InceptionV3 model (.h5)
+* [google sheets](https://docs.google.com/spreadsheets/d/1rbiokSVBE91MzxLPDzrKn7SgEbcvGcdXZVTWVkd8E6E/edit?usp=sharing)
+
 
 **Tech Stack**
 
