@@ -22,6 +22,14 @@ Full-stack AI application to recognize and classify **40 traditional Vietnamese 
 - **Frontend:** React 18 + Vite + Tailwind CSS
 - **Backend:** Flask + TensorFlow 2.16 + InceptionV3
 - **Deployment:** Vercel (Frontend) + Render (Backend)
+## Dataset & Model
+The project utilizes a comprehensive dataset and a pre-trained model hosted on Kaggle:
+
+* **Kaggle Link:** [40 Vietnamese Foods Dataset](https://www.kaggle.com/datasets/baonguyen2703/my-project-images-and-models)
+* **Total Images:** 28,734 images (Train: 20,455 | Val: 2,875 | Test: 5,404)
+* **Classes:** 40 traditional Vietnamese dishes
+* **Includes:** Image data and InceptionV3 model (.h5)
+* **Google sheet:**[Google sheets](https://docs.google.com/spreadsheets/d/1D2oSTsKxlrtggFCtYBDtaLI9eHQu6jtw0FM5Hab62js/edit?usp=sharing)
 
 **Key Features**
 
